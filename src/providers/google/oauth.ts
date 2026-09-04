@@ -83,7 +83,7 @@ export async function refreshTokens(env: Env, refreshToken: string): Promise<Tok
   const text = await res.text();
   if (!res.ok) {
     throw new FitbitAuthError(
-      `Token refresh failed: HTTP ${res.status} ${res.statusText} — ${text}`,
+    `Token refresh failed: HTTP ${res.status} ${res.statusText}`,
     );
   }
 
@@ -92,7 +92,9 @@ export async function refreshTokens(env: Env, refreshToken: string): Promise<Tok
     parsed = TokenResponse.parse(JSON.parse(text));
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    throw new FitbitAuthError(`Token refresh returned unexpected payload (${reason}): ${text}`);
+    throw new FitbitAuthError(
+    `Token refresh returned unexpected payload (${reason})`,
+    );
   }
 
   const issuedAtSec = Math.floor(Date.now() / 1000);
