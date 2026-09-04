@@ -7,7 +7,9 @@ import { buildServer } from './server';
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.get('/', (c) => c.text('fitbit-googlehealth-mcp — see /health and POST /mcp/:secret'));
+app.get('/', (c) =>
+  c.text('fitbit-googlehealth-mcp — see /health and POST /mcp/:secret'),
+);
 
 app.get('/health', (c) =>
   c.json({
@@ -18,9 +20,10 @@ app.get('/health', (c) =>
 );
 
 app.get('/api/daily-summary', async (c) => {
-  const secret = c.req.query('secret');
+  const authorization = c.req.header('Authorization');
+  const expected = `Bearer ${c.env.MCP_SHARED_SECRET}`;
 
-  if (secret !== c.env.MCP_SHARED_SECRET) {
+  if (authorization !== expected) {
     return c.json(
       {
         error: 'unauthorized',
@@ -41,9 +44,10 @@ app.get('/api/daily-summary', async (c) => {
     );
   }
 
-  const provider = new GoogleHealthProvider(c.env);
   try {
+    const provider = new GoogleHealthProvider(c.env);
     const summary = await provider.getDailySummary(date);
+
     return c.json(summary);
   } catch (error) {
     console.error(
@@ -63,8 +67,11 @@ app.get('/api/daily-summary', async (c) => {
 app.post('/mcp/:secret', guardMiddleware(), async (c) => {
   const server = buildServer(c.env);
   const transport = new StreamableHTTPTransport();
+
   await server.connect(transport);
+
   const response = await transport.handleRequest(c);
+
   return response ?? c.text('', 200);
 });
 
