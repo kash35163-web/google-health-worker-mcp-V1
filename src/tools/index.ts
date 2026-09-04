@@ -10,7 +10,6 @@ import { registerNutritionReadTools } from './read/nutrition';
 import { registerProfileTool } from './read/profile';
 import { registerSleepReadTools } from './read/sleep';
 
-
 export function registerAllTools(server: McpServer, provider: HealthProvider, env: Env): void {
   // ---- Read ----
   registerProfileTool(server, provider, env);
@@ -21,5 +20,4 @@ export function registerAllTools(server: McpServer, provider: HealthProvider, en
   registerBodyReadTools(server, provider, env);
   registerNutritionReadTools(server, provider, env);
   registerMetricsReadTools(server, provider, env);
-
 }

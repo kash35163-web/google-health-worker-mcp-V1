@@ -82,14 +82,8 @@ export class GoogleClient {
 
       const text = await res.text();
       if (!res.ok) {
-        console.log(
-          `[google] ${method} ${req.path} → ${res.status} after ${ms}ms`,
-        );
-        throw new FitbitApiError(
-          res.status,
-          `Google Health request failed`,
-          req.path,
-        );
+        console.log(`[google] ${method} ${req.path} → ${res.status} after ${ms}ms`);
+        throw new FitbitApiError(res.status, `Google Health request failed`, req.path);
       }
       return text;
     }

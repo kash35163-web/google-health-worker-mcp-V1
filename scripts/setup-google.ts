@@ -223,10 +223,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const encryptedRefreshToken = await encryptSecret(
-    tokens.refresh_token,
-    tokenEncryptionKey,
-  );
+  const encryptedRefreshToken = await encryptSecret(tokens.refresh_token, tokenEncryptionKey);
 
   console.log('✓ Got tokens');
   console.log('');
@@ -261,9 +258,7 @@ async function main(): Promise<void> {
   console.log(
     `   pnpm wrangler kv key put --binding=TOKENS --remote refresh_token '${encryptedRefreshToken}'`,
   );
-  console.log(
-    `   pnpm wrangler kv key put --binding=TOKENS --remote expires_at '0'`,
-  );
+  console.log(`   pnpm wrangler kv key put --binding=TOKENS --remote expires_at '0'`);
   console.log('');
   console.log('4) Deploy: pnpm deploy');
   console.log('');

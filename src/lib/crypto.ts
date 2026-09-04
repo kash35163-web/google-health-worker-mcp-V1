@@ -38,26 +38,18 @@ async function importEncryptionKey(hexKey: string): Promise<CryptoKey> {
   const raw = hexToBytes(hexKey);
 
   if (raw.length !== 32) {
-    throw new Error(
-      'TOKEN_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters).',
-    );
+    throw new Error('TOKEN_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters).');
   }
 
   const keyBytes = new Uint8Array(raw);
 
-  return crypto.subtle.importKey(
-    'raw',
-    keyBytes.buffer,
-    { name: AES_ALGORITHM },
-    false,
-    ['encrypt', 'decrypt'],
-  );
+  return crypto.subtle.importKey('raw', keyBytes.buffer, { name: AES_ALGORITHM }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
 }
 
-export async function encryptSecret(
-  plaintext: string,
-  hexKey: string,
-): Promise<string> {
+export async function encryptSecret(plaintext: string, hexKey: string): Promise<string> {
   const key = await importEncryptionKey(hexKey);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const plaintextBytes = new TextEncoder().encode(plaintext);
@@ -78,21 +70,14 @@ export async function encryptSecret(
   });
 }
 
-export async function decryptSecret(
-  payload: string,
-  hexKey: string,
-): Promise<string> {
+export async function decryptSecret(payload: string, hexKey: string): Promise<string> {
   const parsed = JSON.parse(payload) as {
     v?: number;
     iv?: string;
     data?: string;
   };
 
-  if (
-    parsed.v !== 1 ||
-    typeof parsed.iv !== 'string' ||
-    typeof parsed.data !== 'string'
-  ) {
+  if (parsed.v !== 1 || typeof parsed.iv !== 'string' || typeof parsed.data !== 'string') {
     throw new Error('Invalid encrypted secret payload.');
   }
 

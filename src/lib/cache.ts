@@ -14,10 +14,7 @@ export async function getCached<T>(
     return hit as T;
   }
   const fresh = await fetcher();
-  const ttl = Math.min(
-    opts.ttlSec ?? DEFAULT_CACHE_TTL_SEC,
-    MAX_CACHE_TTL_SEC,
-  );
+  const ttl = Math.min(opts.ttlSec ?? DEFAULT_CACHE_TTL_SEC, MAX_CACHE_TTL_SEC);
 
   await env.CACHE.put(key, JSON.stringify(fresh), {
     expirationTtl: ttl,

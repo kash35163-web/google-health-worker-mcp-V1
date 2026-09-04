@@ -1,6 +1,6 @@
-import { checkRequestLimit } from '../lib/request-limit';
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../env';
+import { checkRequestLimit } from '../lib/request-limit';
 
 export type GuardInput = {
   secretFromPath: string | undefined;

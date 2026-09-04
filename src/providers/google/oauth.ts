@@ -1,6 +1,6 @@
-import { decryptSecret, encryptSecret } from '../../lib/crypto';
 import { z } from 'zod';
 import type { Env } from '../../env';
+import { decryptSecret, encryptSecret } from '../../lib/crypto';
 // Reused across providers under a Fitbit-era name.
 import { FitbitAuthError } from '../../lib/errors';
 
@@ -28,12 +28,12 @@ export type TokenBundle = {
 
 async function readStoredTokens(env: Env): Promise<TokenBundle> {
   const [accessToken, encryptedRefreshToken, expiresAtRaw] = await Promise.all([
-  env.TOKENS.get('access_token'),
-  env.TOKENS.get('refresh_token'),
-  env.TOKENS.get('expires_at'),
-]);
+    env.TOKENS.get('access_token'),
+    env.TOKENS.get('refresh_token'),
+    env.TOKENS.get('expires_at'),
+  ]);
 
-if (!encryptedRefreshToken || !expiresAtRaw) {
+  if (!encryptedRefreshToken || !expiresAtRaw) {
     throw new FitbitAuthError(
       'Google tokens not found in TOKENS KV. Run `pnpm run setup:google` on a developer machine and populate the namespace.',
     );
@@ -44,10 +44,7 @@ if (!encryptedRefreshToken || !expiresAtRaw) {
     throw new FitbitAuthError(`expires_at in KV is not numeric: ${expiresAtRaw}`);
   }
 
-  const refreshToken = await decryptSecret(
-    encryptedRefreshToken,
-    env.TOKEN_ENCRYPTION_KEY,
-  );
+  const refreshToken = await decryptSecret(encryptedRefreshToken, env.TOKEN_ENCRYPTION_KEY);
 
   return {
     accessToken: accessToken ?? '',
@@ -66,10 +63,7 @@ async function persistTokens(
   // Keep the stored refresh_token when Google omits one on refresh.
   const refreshToken = tokens.refresh_token ?? fallbackRefreshToken;
 
-  const encryptedRefreshToken = await encryptSecret(
-    refreshToken,
-    env.TOKEN_ENCRYPTION_KEY,
-  );
+  const encryptedRefreshToken = await encryptSecret(refreshToken, env.TOKEN_ENCRYPTION_KEY);
 
   const accessTokenTtl = Math.max(60, tokens.expires_in);
 
@@ -105,9 +99,7 @@ export async function refreshTokens(env: Env, refreshToken: string): Promise<Tok
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new FitbitAuthError(
-    `Token refresh failed: HTTP ${res.status} ${res.statusText}`,
-    );
+    throw new FitbitAuthError(`Token refresh failed: HTTP ${res.status} ${res.statusText}`);
   }
 
   let parsed: TokenResponseT;
@@ -115,9 +107,7 @@ export async function refreshTokens(env: Env, refreshToken: string): Promise<Tok
     parsed = TokenResponse.parse(JSON.parse(text));
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    throw new FitbitAuthError(
-    `Token refresh returned unexpected payload (${reason})`,
-    );
+    throw new FitbitAuthError(`Token refresh returned unexpected payload (${reason})`);
   }
 
   const issuedAtSec = Math.floor(Date.now() / 1000);

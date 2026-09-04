@@ -11,10 +11,7 @@ function encryptTestSecret(plaintext: string): string {
 
   const cipher = createCipheriv('aes-256-gcm', key, iv);
 
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintext, 'utf8'),
-    cipher.final(),
-  ]);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
 
   const authTag = cipher.getAuthTag();
 
@@ -33,16 +30,11 @@ export function createMockKv(init: Record<string, string> = {}) {
   const store = new Map(Object.entries(init));
 
   const kv = {
-    get: vi.fn(
-      async (key: string, _type?: 'json' | 'text') =>
-        store.get(key) ?? null,
-    ),
+    get: vi.fn(async (key: string, _type?: 'json' | 'text') => store.get(key) ?? null),
 
-    put: vi.fn(
-      async (key: string, value: string, _opts?: unknown) => {
-        store.set(key, value);
-      },
-    ),
+    put: vi.fn(async (key: string, value: string, _opts?: unknown) => {
+      store.set(key, value);
+    }),
 
     delete: vi.fn(async (key: string) => {
       store.delete(key);
@@ -70,9 +62,7 @@ export function createMockEnv(
   const storedTokens = { ...tokens };
 
   if (storedTokens.refresh_token) {
-    storedTokens.refresh_token = encryptTestSecret(
-      storedTokens.refresh_token,
-    );
+    storedTokens.refresh_token = encryptTestSecret(storedTokens.refresh_token);
   }
 
   return {
