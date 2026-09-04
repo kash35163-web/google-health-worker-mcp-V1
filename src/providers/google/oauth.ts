@@ -1,3 +1,4 @@
+import { decryptSecret, encryptSecret } from '../../lib/crypto';
 import { z } from 'zod';
 import type { Env } from '../../env';
 // Reused across providers under a Fitbit-era name.
@@ -26,20 +27,28 @@ export type TokenBundle = {
 };
 
 async function readStoredTokens(env: Env): Promise<TokenBundle> {
-  const [accessToken, refreshToken, expiresAtRaw] = await Promise.all([
+  const [accessToken, encryptedRefreshToken, expiresAtRaw] = await Promise.all([
     env.TOKENS.get('access_token'),
     env.TOKENS.get('refresh_token'),
     env.TOKENS.get('expires_at'),
   ]);
-  if (!accessToken || !refreshToken || !expiresAtRaw) {
+
+  if (!accessToken || !encryptedRefreshToken || !expiresAtRaw) {
     throw new FitbitAuthError(
       'Google tokens not found in TOKENS KV. Run `pnpm run setup:google` on a developer machine and populate the namespace.',
     );
   }
+
   const expiresAt = Number(expiresAtRaw);
   if (!Number.isFinite(expiresAt)) {
     throw new FitbitAuthError(`expires_at in KV is not numeric: ${expiresAtRaw}`);
   }
+
+  const refreshToken = await decryptSecret(
+    encryptedRefreshToken,
+    env.TOKEN_ENCRYPTION_KEY,
+  );
+
   return { accessToken, refreshToken, expiresAt };
 }
 
@@ -52,9 +61,15 @@ async function persistTokens(
   const expiresAt = issuedAtSec + tokens.expires_in;
   // Keep the stored refresh_token when Google omits one on refresh.
   const refreshToken = tokens.refresh_token ?? fallbackRefreshToken;
+
+  const encryptedRefreshToken = await encryptSecret(
+    refreshToken,
+    env.TOKEN_ENCRYPTION_KEY,
+  );
+
   await Promise.all([
     env.TOKENS.put('access_token', tokens.access_token),
-    env.TOKENS.put('refresh_token', refreshToken),
+    env.TOKENS.put('refresh_token', encryptedRefreshToken),
     env.TOKENS.put('expires_at', String(expiresAt)),
   ]);
   return { accessToken: tokens.access_token, refreshToken, expiresAt };
