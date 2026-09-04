@@ -18,6 +18,17 @@ app.get('/health', (c) =>
 );
 
 app.get('/api/daily-summary', async (c) => {
+  const secret = c.req.query('secret');
+
+  if (secret !== c.env.MCP_SHARED_SECRET) {
+    return c.json(
+      {
+        error: 'unauthorized',
+      },
+      401,
+    );
+  }
+
   const date = c.req.query('date');
 
   if (!date) {
