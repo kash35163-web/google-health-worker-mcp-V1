@@ -1,3 +1,4 @@
+import { checkRequestLimit } from '../lib/request-limit';
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../env';
 
@@ -97,6 +98,17 @@ export const guardMiddleware = (): MiddlewareHandler<{ Bindings: Env }> => {
     });
     if (!result.ok) {
       return c.text(result.reason, result.status);
+    }
+    const clientIp = c.req.header('CF-Connecting-IP');
+
+    if (!clientIp) {
+      return c.text('missing_client_ip', 403);
+    }
+
+    const allowed = await checkRequestLimit(c.env, clientIp);
+
+    if (!allowed) {
+      return c.text('rate_limited', 429);
     }
     await next();
   };
