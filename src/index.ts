@@ -42,9 +42,22 @@ app.get('/api/daily-summary', async (c) => {
   }
 
   const provider = new GoogleHealthProvider(c.env);
-  const summary = await provider.getDailySummary(date);
+  try {
+    const summary = await provider.getDailySummary(date);
+    return c.json(summary);
+  } catch (error) {
+    console.error(
+      '[daily-summary]',
+      error instanceof Error ? error.message : String(error),
+    );
 
-  return c.json(summary);
+    return c.json(
+      {
+        error: 'daily_summary_failed',
+      },
+      500,
+    );
+  }
 });
 
 app.post('/mcp/:secret', guardMiddleware(), async (c) => {
