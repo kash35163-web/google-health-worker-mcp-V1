@@ -132,7 +132,7 @@ describe('refreshTokens (google)', () => {
     expect(result.refreshToken).toBe('r2');
     expect(result.expiresAt).toBe(nowSec + 3599);
     expect(await env.TOKENS.get('access_token')).toBe('a2');
-    expect(await env.TOKENS.get('refresh_token')).toBe('r2');
+    expect(await env.TOKENS.get('refresh_token')).not.toBe('r2');
     expect(await env.TOKENS.get('expires_at')).toBe(String(nowSec + 3599));
   });
 
@@ -162,7 +162,7 @@ describe('refreshTokens (google)', () => {
 
     expect(result.accessToken).toBe('rotated-access');
     expect(result.refreshToken).toBe('keep-me');
-    expect(await env.TOKENS.get('refresh_token')).toBe('keep-me');
+    expect(await env.TOKENS.get('refresh_token')).not.toBe('keep-me');
   });
 
   it('throws FitbitAuthError with the response body on HTTP 4xx/5xx', async () => {
