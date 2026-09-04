@@ -9,23 +9,28 @@ function hexToBytes(hex: string): Uint8Array {
   for (let i = 0; i < bytes.length; i++) {
     bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
+
   return bytes;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
+
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
   }
+
   return btoa(binary);
 }
 
 function base64ToBytes(value: string): Uint8Array {
   const binary = atob(value);
   const bytes = new Uint8Array(binary.length);
+
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);
   }
+
   return bytes;
 }
 
@@ -33,12 +38,16 @@ async function importEncryptionKey(hexKey: string): Promise<CryptoKey> {
   const raw = hexToBytes(hexKey);
 
   if (raw.length !== 32) {
-    throw new Error('TOKEN_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters).');
+    throw new Error(
+      'TOKEN_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters).',
+    );
   }
+
+  const keyBytes = new Uint8Array(raw);
 
   return crypto.subtle.importKey(
     'raw',
-    raw,
+    keyBytes.buffer,
     { name: AES_ALGORITHM },
     false,
     ['encrypt', 'decrypt'],
@@ -56,10 +65,10 @@ export async function encryptSecret(
   const ciphertext = await crypto.subtle.encrypt(
     {
       name: AES_ALGORITHM,
-      iv,
+      iv: iv.buffer,
     },
     key,
-    plaintextBytes,
+    plaintextBytes.buffer,
   );
 
   return JSON.stringify({
@@ -88,16 +97,16 @@ export async function decryptSecret(
   }
 
   const key = await importEncryptionKey(hexKey);
-  const iv = base64ToBytes(parsed.iv);
-  const ciphertext = base64ToBytes(parsed.data);
+  const iv = new Uint8Array(base64ToBytes(parsed.iv));
+  const ciphertext = new Uint8Array(base64ToBytes(parsed.data));
 
   const plaintext = await crypto.subtle.decrypt(
     {
       name: AES_ALGORITHM,
-      iv,
+      iv: iv.buffer,
     },
     key,
-    ciphertext,
+    ciphertext.buffer,
   );
 
   return new TextDecoder().decode(plaintext);
