@@ -7,6 +7,7 @@ export type Env = {
   // Google Health API v4 OAuth credentials (set via `wrangler secret put`).
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
+  TOKEN_ENCRYPTION_KEY: string;
   MCP_SHARED_SECRET: string;
   ALLOWED_CIDRS: string;
 };
