@@ -170,7 +170,9 @@ describe('refreshTokens (google)', () => {
       async () => new Response('invalid_grant', { status: 400, statusText: 'Bad Request' }),
     );
     vi.stubGlobal('fetch', fetchMock);
-    await expect(refreshTokens(createMockEnv(), 'rt')).rejects.toThrow(/invalid_grant/);
+    await expect(refreshTokens(createMockEnv(), 'rt')).rejects.toThrow(
+      /Token refresh failed: HTTP 400 Bad Request/,
+    );
   });
 
   it('throws FitbitAuthError when client id / secret are absent', async () => {
