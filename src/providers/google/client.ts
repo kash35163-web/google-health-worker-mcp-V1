@@ -24,10 +24,9 @@ export class GoogleClient {
     const body = await this.requestText(req);
     const parsed = schema.safeParse(JSON.parse(body));
     if (!parsed.success) {
-      const rawPreview = body.length > 500 ? `${body.slice(0, 500)}…` : body;
       throw new FitbitApiError(
         200,
-        `Schema validation failed at ${req.path}: ${parsed.error.message}\nRaw body preview: ${rawPreview}`,
+        `Schema validation failed at ${req.path}: ${parsed.error.message}`,
         req.path,
       );
     }
@@ -84,9 +83,13 @@ export class GoogleClient {
       const text = await res.text();
       if (!res.ok) {
         console.log(
-          `[google] ${method} ${req.path} → ${res.status} after ${ms}ms: ${text.slice(0, 300)}`,
+          `[google] ${method} ${req.path} → ${res.status} after ${ms}ms`,
         );
-        throw new FitbitApiError(res.status, text, req.path);
+        throw new FitbitApiError(
+          res.status,
+          `Google Health request failed`,
+          req.path,
+        );
       }
       return text;
     }
