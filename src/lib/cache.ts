@@ -1,6 +1,7 @@
 import type { Env } from '../env';
 
 export const DEFAULT_CACHE_TTL_SEC = 60 * 60; // 1 hour
+export const MAX_CACHE_TTL_SEC = 60 * 60; // hard cap: 1 hour
 
 export async function getCached<T>(
   env: Env,
@@ -13,8 +14,13 @@ export async function getCached<T>(
     return hit as T;
   }
   const fresh = await fetcher();
+  const ttl = Math.min(
+    opts.ttlSec ?? DEFAULT_CACHE_TTL_SEC,
+    MAX_CACHE_TTL_SEC,
+  );
+
   await env.CACHE.put(key, JSON.stringify(fresh), {
-    expirationTtl: opts.ttlSec ?? DEFAULT_CACHE_TTL_SEC,
+    expirationTtl: ttl,
   });
   return fresh;
 }
