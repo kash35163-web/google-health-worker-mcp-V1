@@ -6,7 +6,7 @@ import { buildServer } from './server';
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.get('/', (c) => c.text('fitbit-googlehealth-mcp — see /health and POST /mcp/:secret'));
+app.get('/', (c) => c.text('google-health-mcp'));
 
 app.get('/health', (c) =>
   c.json({
