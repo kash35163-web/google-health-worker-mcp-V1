@@ -28,12 +28,12 @@ export type TokenBundle = {
 
 async function readStoredTokens(env: Env): Promise<TokenBundle> {
   const [accessToken, encryptedRefreshToken, expiresAtRaw] = await Promise.all([
-    env.TOKENS.get('access_token'),
-    env.TOKENS.get('refresh_token'),
-    env.TOKENS.get('expires_at'),
-  ]);
+  env.TOKENS.get('access_token'),
+  env.TOKENS.get('refresh_token'),
+  env.TOKENS.get('expires_at'),
+]);
 
-  if (!accessToken || !encryptedRefreshToken || !expiresAtRaw) {
+if (!encryptedRefreshToken || !expiresAtRaw) {
     throw new FitbitAuthError(
       'Google tokens not found in TOKENS KV. Run `pnpm run setup:google` on a developer machine and populate the namespace.',
     );
@@ -49,7 +49,11 @@ async function readStoredTokens(env: Env): Promise<TokenBundle> {
     env.TOKEN_ENCRYPTION_KEY,
   );
 
-  return { accessToken, refreshToken, expiresAt };
+  return {
+    accessToken: accessToken ?? '',
+    refreshToken,
+    expiresAt,
+  };
 }
 
 async function persistTokens(
@@ -67,8 +71,12 @@ async function persistTokens(
     env.TOKEN_ENCRYPTION_KEY,
   );
 
+  const accessTokenTtl = Math.max(60, tokens.expires_in);
+
   await Promise.all([
-    env.TOKENS.put('access_token', tokens.access_token),
+    env.TOKENS.put('access_token', tokens.access_token, {
+      expirationTtl: accessTokenTtl,
+    }),
     env.TOKENS.put('refresh_token', encryptedRefreshToken),
     env.TOKENS.put('expires_at', String(expiresAt)),
   ]);
