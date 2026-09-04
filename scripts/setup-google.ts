@@ -29,6 +29,7 @@ import { exec } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
 import { z } from 'zod';
+import { encryptSecret } from '../src/lib/crypto';
 
 const GOOGLE_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -164,14 +165,18 @@ async function exchangeCode(opts: {
 async function main(): Promise<void> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    console.error('Error: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set.');
+  const tokenEncryptionKey = process.env.TOKEN_ENCRYPTION_KEY;
+  if (!clientId || !clientSecret || !tokenEncryptionKey) {
+    console.error(
+      'Error: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and TOKEN_ENCRYPTION_KEY must be set.',
+    );
     console.error('');
     console.error('  1. Create an OAuth client (Web application) in Google Cloud Console.');
     console.error(`     Authorized redirect URI: ${REDIRECT_URI}`);
     console.error('  2. Export the values:');
     console.error('     export GOOGLE_CLIENT_ID=...');
     console.error('     export GOOGLE_CLIENT_SECRET=...');
+    console.error('     export TOKEN_ENCRYPTION_KEY=...');
     console.error('  3. Run again: pnpm run setup:google');
     process.exit(1);
   }
@@ -218,7 +223,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const expiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;
+  const encryptedRefreshToken = await encryptSecret(
+    tokens.refresh_token,
+    tokenEncryptionKey,
+  );
 
   console.log('✓ Got tokens');
   console.log('');
@@ -226,7 +234,7 @@ async function main(): Promise<void> {
   console.log(`  token_type:    ${tokens.token_type ?? 'Bearer'}`);
   console.log(`  access_token:  ${mask(tokens.access_token)}`);
   console.log(`  refresh_token: ${mask(tokens.refresh_token)}`);
-  console.log(`  expires_in:    ${tokens.expires_in}s (unix epoch: ${expiresAt})`);
+  console.log(`  expires_in:    ${tokens.expires_in}s`);
   console.log('');
   console.log('Next: store these on Cloudflare Workers.');
   console.log('──────────────────────────────────────────');
@@ -242,19 +250,20 @@ async function main(): Promise<void> {
   console.log(`     ↳ value: ${clientId}`);
   console.log('   pnpm wrangler secret put GOOGLE_CLIENT_SECRET');
   console.log('     ↳ value: <your Google OAuth client secret>');
+  console.log('   pnpm wrangler secret put TOKEN_ENCRYPTION_KEY');
+  console.log('     ↳ value: <the same TOKEN_ENCRYPTION_KEY used for this setup>');
   console.log('   pnpm wrangler secret put MCP_SHARED_SECRET');
   // hex, not base64 — this secret is embedded in the /mcp/:secret URL path,
   // where base64's `/` and `+` would break routing.
   console.log('     ↳ value: $(openssl rand -hex 32)');
   console.log('');
-  console.log('3) Google tokens into the TOKENS KV namespace:');
+  console.log('3) Google refresh token into the TOKENS KV namespace:');
   console.log(
-    `   pnpm wrangler kv key put --binding=TOKENS --remote refresh_token '${tokens.refresh_token}'`,
+    `   pnpm wrangler kv key put --binding=TOKENS --remote refresh_token '${encryptedRefreshToken}'`,
   );
   console.log(
-    `   pnpm wrangler kv key put --binding=TOKENS --remote access_token  '${tokens.access_token}'`,
+    `   pnpm wrangler kv key put --binding=TOKENS --remote expires_at '0'`,
   );
-  console.log(`   pnpm wrangler kv key put --binding=TOKENS --remote expires_at    '${expiresAt}'`);
   console.log('');
   console.log('4) Deploy: pnpm deploy');
   console.log('');
